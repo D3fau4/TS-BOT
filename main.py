@@ -58,6 +58,10 @@ class Config:
         self.json["Reload"] = r
         self.UpdateConfig()
 
+    def setprefix(self, p):
+        self.json["PREFIX"] = p
+        self.UpdateConfig()
+
 
 class News():
 
@@ -313,33 +317,74 @@ class Client(discord.Client):
                             name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                         await channel.send(embed=embed)
                 elif args[0] == "ReloadTime":
-                    try:
-                        self.config.setReload(args[1])
+                    if (message.author.permissions_in(message.channel).administrator == True):
+                        try:
+                            self.config.setReload(args[1])
+                            channel = message.channel
+                            embed = discord.Embed(title=" ", color=0xc565d2)
+                            embed.set_author(name="Tokoyami Towa")
+                            embed.set_thumbnail(
+                                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                            embed.add_field(
+                                name="**Mensaje:**", value="Se a cambiado el tiempo de refresco de la web correctamente.", inline=True)
+                            await channel.send(embed=embed)
+                        except:
+                            channel = message.channel
+                            embed = discord.Embed(title=" ", color=0xc565d2)
+                            embed.set_author(name="Tokoyami Towa")
+                            embed.set_thumbnail(
+                                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                            embed.add_field(
+                                name="**Mensaje:**", value="No se ha introducido bien los argumentos para el comando: `" + args[0] + "`", inline=True)
+                            await channel.send(embed=embed)
+                    else:
                         channel = message.channel
                         embed = discord.Embed(title=" ", color=0xc565d2)
                         embed.set_author(name="Tokoyami Towa")
                         embed.set_thumbnail(
                             url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
                         embed.add_field(
-                            name="**Mensaje:**", value="Se a cambiado el tiempo de refresco de la web correctamente.", inline=True)
-                        await channel.send(embed=embed)
-                    except:
-                        channel = message.channel
-                        embed = discord.Embed(title=" ", color=0xc565d2)
-                        embed.set_author(name="Tokoyami Towa")
-                        embed.set_thumbnail(
-                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
-                        embed.add_field(
-                            name="**Mensaje:**", value="No se ha introducido bien los argumentos para el comando: `" + args[0] + "`", inline=True)
-                        await channel.send(embed=embed)
+                            name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                 elif args[0] == "info" or args[0] == "help":
                     channel = message.channel
-                    embed=discord.Embed(title="Tokoyami Towa", color=0xc565d2)
-                    embed.set_author(name="Hecho por Hat Kid", icon_url="https://cdn.discordapp.com/avatars/363594127885074434/0778dfb946e90e6d645e09fa93d5b247.png?size=2048")
-                    embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
-                    embed.add_field(name="**Comandos:**", value="```TS.setchannel    -  Establecerá en canal donde se ejecute como canal de noticias.\nTS.update        -  Hará un refresco manual de las noticias de la web.\nTS.ReloadTime    -  Establecerá el intervalo de minutos entre los refrescos automáticos.\nTS.help/info     -  Mostrará este mensaje.```", inline=True)
+                    embed = discord.Embed(
+                        title="Tokoyami Towa", color=0xc565d2)
+                    embed.set_author(
+                        name="Hecho por Hat Kid", icon_url="https://cdn.discordapp.com/avatars/363594127885074434/0778dfb946e90e6d645e09fa93d5b247.png?size=2048")
+                    embed.set_thumbnail(
+                        url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                    embed.add_field(name="**Comandos:**", value="```TS.setchannel             -  Establecerá en canal donde se ejecute como canal de noticias.\nTS.update                 -  Hará un refresco manual de las noticias de la web.\nTS.ReloadTime [minutos]   -  Establecerá el intervalo de minutos entre los refrescos automáticos.\nTS.help/info              -  Mostrará este mensaje.\nTS.SetPrefix [prefijo]    -  Establecerá el prefijo para los comandos del bot.```".replace("TS.", self.config.getprefix()), inline=True)
                     embed.set_footer(text="Versión: " + VERSION)
                     await channel.send(embed=embed)
+                elif args[0] == "SetPrefix":
+                    if (message.author.permissions_in(message.channel).administrator == True):
+                        try:
+                            self.config.setprefix(args[1])
+                            channel = message.channel
+                            embed = discord.Embed(title=" ", color=0xc565d2)
+                            embed.set_author(name="Tokoyami Towa")
+                            embed.set_thumbnail(
+                                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                            embed.add_field(
+                                name="**Mensaje:**", value="Se a cambiado el prefijo correctamente por `" + self.config.getprefix() +"`", inline=True)
+                            await channel.send(embed=embed)
+                        except:
+                            channel = message.channel
+                            embed = discord.Embed(title=" ", color=0xc565d2)
+                            embed.set_author(name="Tokoyami Towa")
+                            embed.set_thumbnail(
+                                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                            embed.add_field(
+                                name="**Mensaje:**", value="No se ha introducido bien los argumentos para el comando: `" + args[0] + "`", inline=True)
+                            await channel.send(embed=embed)
+                    else:
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
+                        embed.set_thumbnail(
+                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                        embed.add_field(
+                            name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                 else:
                     channel = message.channel
                     embed = discord.Embed(title=" ", color=0xc565d2)
