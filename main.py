@@ -52,6 +52,8 @@ class News():
         self.img = ""
         self.tag = ""
         self.url = ""
+        self.avatar = ""
+        self.nombre = ""
 
     def loadlocalnew(self):
         import json
@@ -60,14 +62,16 @@ class News():
             f = open("New.json", "r")
             self.json = json.load(f)
             self.autor = self.json["autor"]
+            self.avatar = URL + "avatars/" + self.json["autor"]
             self.titulo = self.json["titulo"]
             self.fecha = self.json["fecha"]
             self.descrip = self.json["descripcion"]
             self.tag = self.json["tag"]
             self.img = self.json["img"]
             self.url = self.json["url"]
+            self.nombre = self.json["nombre"]
             f.close()
-        except IOError:
+        except:
             print("Creando New.json")
             f = open("New.json", "w")
             html = requests.get(URL).text
@@ -87,7 +91,11 @@ class News():
             self.url = URL + \
                 re.search(
                     "(?P<url>entrada.php[^\s]+)", str(new.find('a'))).group("url").replace("\">", "")
+            web = BeautifulSoup(requests.get(self.url).text, "html.parser")
+            self.nombre = web.find(
+                'div', attrs={'class': 'col text-center p-0'}).text.replace("\n", "")
             file = {
+                "nombre": self.nombre,
                 "titulo": self.titulo,
                 "autor": self.autor,
                 "fecha": self.fecha,
@@ -111,12 +119,16 @@ class News():
         self.descrip = new.find('div', attrs={
                                 'class': 'col p-2 pl-3 text-black rounded bg-white'}).text.replace("\n", "")
         self.tag = post_info[2].text.replace("\n", "")
-        self.img = re.search("(?P<url>https?://[^\s]+.webp)", str(
+        self.img = re.search("(?P<url>https?://[^\s]+.(?i:jpg|gif|png|bmp|webp))", str(
             new.find('div', attrs={'class': 'col-md-5 p-0 preview'}))).group("url")
         self.url = URL + \
             re.search(
                 "(?P<url>entrada.php[^\s]+)", str(new.find('a'))).group("url").replace("\">", "")
+        web = BeautifulSoup(requests.get(self.url).text, "html.parser")
+        self.nombre = web.find(
+            'div', attrs={'class': 'col text-center p-0'}).text.replace("\n", "")
         file = {
+            "nombre": self.nombre,
             "titulo": self.titulo,
             "autor": self.autor,
             "fecha": self.fecha,
@@ -150,6 +162,12 @@ class News():
     def seturl(self, u):
         self.url = u
 
+    def setavatar(self, a):
+        self.avatar = a
+
+    def setnombre(self, n):
+        self.nombre = n
+
     def gettitulo(self):
         return self.titulo
 
@@ -170,6 +188,12 @@ class News():
 
     def geturl(self):
         return self.url
+
+    def getavatar(self):
+        return self.avatar
+
+    def getnombre(self):
+        return self.nombre
 
 
 class Client(discord.Client):
@@ -224,25 +248,41 @@ class Client(discord.Client):
                             name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                         await channel.send(embed=embed)
                 if args[0] == "update":
-                    html = requests.get(URL).text
-                    soup = BeautifulSoup(html, "html.parser")
-                    new = soup.body.find(
-                        'div', attrs={'class': 'tarjeta p-0 rounded mb-4'})
-                    if (self.last_new.titulo == new.find('h2', attrs={'class': 'mb-0'}).text.replace("\n", "")):
-                        print("Noticia nueva")
-                        self.last_new.Update(new)
-                        channel = self.get_channel(self.config.getchannel())
-                        embed = discord.Embed(title=self.last_new.gettitulo(), url=self.last_new.geturl(), color=0xc565d2)
-                        embed.set_author(name="Por "+self.last_new.getautor())
+                    if (message.author.permissions_in(message.channel).administrator == True):
+                        html = requests.get(URL).text
+                        soup = BeautifulSoup(html, "html.parser")
+                        new = soup.body.find(
+                            'div', attrs={'class': 'tarjeta p-0 rounded mb-4'})
+                        if (self.last_new.titulo != new.find('h2', attrs={'class': 'mb-0'}).text.replace("\n", "")):
+                            print("Noticia nueva")
+                            self.last_new.Update(new)
+                            channel = self.get_channel(
+                                self.config.getchannel())
+                            embed = discord.Embed(title=self.last_new.gettitulo(), url=self.last_new.geturl(), color=0xc565d2)
+                            embed.set_author(name=self.last_new.getautor())
+                            embed.add_field(name="**" + self.last_new.getfecha() + "**", value="```" +
+                                            self.last_new.getdescrip() + "```", inline=True)
+                            embed.set_image(url=self.last_new.getimg())
+                            embed.set_footer(text=self.last_new.getnombre())
+                            await channel.send(embed=embed)
+                        else:
+                            channel = message.channel
+                            embed = discord.Embed(title=" ", color=0xc565d2)
+                            embed.set_author(name="Tokoyami Towa")
+                            embed.set_thumbnail(
+                                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                            embed.add_field(
+                                name="**Mensaje:**", value="No hay nuevas entradas.", inline=True)
+                            await channel.send(embed=embed)
+                    else:
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
                         embed.set_thumbnail(
                             url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
-                        embed.add_field(name="**" + self.last_new.getfecha() + "**", value="```" +
-                                        self.last_new.getdescrip() + "```", inline=True)
-                        embed.set_image(url=self.last_new.getimg())
-                        embed.set_footer(text=self.last_new.gettag())
+                        embed.add_field(
+                            name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                         await channel.send(embed=embed)
-                    else:
-                        print("No hay nuevas")
         else:
             print("Mensaje del bot: " + str(self.user))
 
