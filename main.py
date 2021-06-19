@@ -1,11 +1,14 @@
 import re
-import attr
+import asyncio
 import discord
+from discord.ext import tasks
 import requests
 import re
 from bs4 import BeautifulSoup
 
 URL = "https://tradusquare.es/"
+VERSION = "1.0.0"
+RELOAD = 5
 
 
 class Config:
@@ -18,7 +21,14 @@ class Config:
         except IOError:
             print("Creando archivo de configuración.")
             f = open("Config.json", "a")
-            f.write("{\"API_KEY\" : \"YOURKEY\", \"PREFIX\" : \"TS.\"}")
+            x = {
+                "API_KEY": "YOURKEY",
+                "channel": "",
+                "PREFIX": "TS.",
+                "Reload": 5
+            }
+            tmp = json.dumps(x)
+            f.write(str(tmp).replace("\'", "\""))
             f.close()
             print("Porfavor configura el json")
             exit()
@@ -39,6 +49,13 @@ class Config:
 
     def setchannel(self, ch):
         self.json["channel"] = ch
+        self.UpdateConfig()
+
+    def getReload(self):
+        return self.json["Reload"]
+
+    def setReload(self, r):
+        self.json["Reload"] = r
         self.UpdateConfig()
 
 
@@ -119,7 +136,7 @@ class News():
         self.descrip = new.find('div', attrs={
                                 'class': 'col p-2 pl-3 text-black rounded bg-white'}).text.replace("\n", "")
         self.tag = post_info[2].text.replace("\n", "")
-        self.img = re.search("(?P<url>https?://[^\s]+.(?i:jpg|gif|png|bmp|webp))", str(
+        self.img = re.search("(?P<url>https?://[^\s]+.(?i:jpg|gif|png|bmp|webp|svg|jpeg))", str(
             new.find('div', attrs={'class': 'col-md-5 p-0 preview'}))).group("url")
         self.url = URL + \
             re.search(
@@ -208,6 +225,28 @@ class Client(discord.Client):
 
     async def on_ready(self):
         print("Iniciado sesion como: " + str(self.user))
+        self.traducheck.start()
+
+    @tasks.loop(seconds=RELOAD * 60)
+    async def traducheck(self):
+        html = requests.get(URL).text
+        soup = BeautifulSoup(html, "html.parser")
+        new = soup.body.find(
+            'div', attrs={'class': 'tarjeta p-0 rounded mb-4'})
+        if (self.last_new.titulo != new.find('h2', attrs={'class': 'mb-0'}).text.replace("\n", "")):
+            print("Noticia nueva")
+            self.last_new.Update(new)
+            channel = self.get_channel(self.config.getchannel())
+            embed = discord.Embed(title=self.last_new.gettitulo(
+            ), url=self.last_new.geturl(), color=0xc565d2)
+            embed.set_author(name=self.last_new.getautor())
+            embed.add_field(name="**" + self.last_new.getfecha() + "**", value="```" +
+                            self.last_new.getdescrip() + "```", inline=True)
+            embed.set_image(url=self.last_new.getimg())
+            embed.set_footer(text=self.last_new.getnombre())
+            await channel.send(embed=embed)
+        else:
+            print("No hay noticia nueva")
 
     async def on_message(self, message):
         if (message.author != self.user):  # comprobar que el mensaje no sea de él mismo
@@ -216,17 +255,6 @@ class Client(discord.Client):
             if message.content.startswith(self.config.getprefix()):
                 args = str(message.content).replace(
                     self.config.getprefix(), '').split(' ')
-                # Comprobar descarga
-                if args[0] == "info":
-                    print()
-                    channel = message.channel
-                    embed = discord.Embed(title=" ", color=0xc565d2)
-                    embed.set_author(name="Tokoyami Towa")
-                    embed.set_thumbnail(
-                        url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
-                    embed.add_field(name="**Comandos:**",
-                                    value="test", inline=True)
-                    await channel.send(embed=embed)
                 if args[0] == "setchannel":
                     if (message.author.permissions_in(message.channel).administrator == True):
                         self.config.setchannel(message.channel.id)
@@ -247,7 +275,7 @@ class Client(discord.Client):
                         embed.add_field(
                             name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                         await channel.send(embed=embed)
-                if args[0] == "update":
+                elif args[0] == "update":
                     if (message.author.permissions_in(message.channel).administrator == True):
                         html = requests.get(URL).text
                         soup = BeautifulSoup(html, "html.parser")
@@ -258,7 +286,8 @@ class Client(discord.Client):
                             self.last_new.Update(new)
                             channel = self.get_channel(
                                 self.config.getchannel())
-                            embed = discord.Embed(title=self.last_new.gettitulo(), url=self.last_new.geturl(), color=0xc565d2)
+                            embed = discord.Embed(title=self.last_new.gettitulo(
+                            ), url=self.last_new.geturl(), color=0xc565d2)
                             embed.set_author(name=self.last_new.getautor())
                             embed.add_field(name="**" + self.last_new.getfecha() + "**", value="```" +
                                             self.last_new.getdescrip() + "```", inline=True)
@@ -283,6 +312,44 @@ class Client(discord.Client):
                         embed.add_field(
                             name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
                         await channel.send(embed=embed)
+                elif args[0] == "ReloadTime":
+                    try:
+                        self.config.setReload(args[1])
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
+                        embed.set_thumbnail(
+                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                        embed.add_field(
+                            name="**Mensaje:**", value="Se a cambiado el tiempo de refresco de la web correctamente.", inline=True)
+                        await channel.send(embed=embed)
+                    except:
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
+                        embed.set_thumbnail(
+                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                        embed.add_field(
+                            name="**Mensaje:**", value="No se ha introducido bien los argumentos para el comando: `" + args[0] + "`", inline=True)
+                        await channel.send(embed=embed)
+                elif args[0] == "info" or args[0] == "help":
+                    channel = message.channel
+                    embed=discord.Embed(title="Tokoyami Towa", color=0xc565d2)
+                    embed.set_author(name="Hecho por Hat Kid", icon_url="https://cdn.discordapp.com/avatars/363594127885074434/0778dfb946e90e6d645e09fa93d5b247.png?size=2048")
+                    embed.set_thumbnail(url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                    embed.add_field(name="**Comandos:**", value="```TS.setchannel    -  Establecerá en canal donde se ejecute como canal de noticias.\nTS.update        -  Hará un refresco manual de las noticias de la web.\nTS.ReloadTime    -  Establecerá el intervalo de minutos entre los refrescos automáticos.\nTS.help/info     -  Mostrará este mensaje.```", inline=True)
+                    embed.set_footer(text="Versión: " + VERSION)
+                    await channel.send(embed=embed)
+                else:
+                    channel = message.channel
+                    embed = discord.Embed(title=" ", color=0xc565d2)
+                    embed.set_author(name="Tokoyami Towa")
+                    embed.set_thumbnail(
+                        url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                    embed.add_field(
+                        name="**Mensaje:**", value="No se ha reconocido el comando: `" + args[0] + "`", inline=True)
+                    await channel.send(embed=embed)
+
         else:
             print("Mensaje del bot: " + str(self.user))
 
@@ -290,4 +357,5 @@ class Client(discord.Client):
 # Programa principal
 config = Config()
 client = Client(config)
+RELOAD = config.getReload()
 client.run(config.getapiKey())
