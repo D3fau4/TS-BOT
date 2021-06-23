@@ -254,7 +254,8 @@ class Client(discord.Client):
 
     async def on_message(self, message):
         if (message.author != self.user):  # comprobar que el mensaje no sea de él mismo
-            print('Mensaje de {0.author}: {0.content}'.format(message))
+            # Imprimir mensaje por pantalla
+            #print('Mensaje de {0.author}: {0.content}'.format(message))
             # mirar si están llamando al bot
             if message.content.startswith(self.config.getprefix()):
                 args = str(message.content).replace(
