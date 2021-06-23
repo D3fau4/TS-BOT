@@ -1,5 +1,4 @@
 import re
-import asyncio
 import discord
 from discord.ext import tasks
 import requests
