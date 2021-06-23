@@ -248,6 +248,7 @@ class Client(discord.Client):
             embed.set_image(url=self.last_new.getimg())
             embed.set_footer(text=self.last_new.getnombre())
             await channel.send(embed=embed)
+            await channel.send("@everyone")
         else:
             print("No hay noticia nueva")
 
@@ -297,6 +298,7 @@ class Client(discord.Client):
                             embed.set_image(url=self.last_new.getimg())
                             embed.set_footer(text=self.last_new.getnombre())
                             await channel.send(embed=embed)
+                            await channel.send("@everyone")
                         else:
                             channel = message.channel
                             embed = discord.Embed(title=" ", color=0xc565d2)
