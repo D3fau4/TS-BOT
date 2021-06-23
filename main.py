@@ -220,8 +220,8 @@ class Client(discord.Client):
 
     def __init__(self, config):
         super().__init__()
-        self.activity = discord.Streaming(name='TraduSquare', url="https://tradusquare.es/",
-                                          state="cum", details="gdfg", type=discord.ActivityType.watching)
+        self.activity = discord.Activity(
+            type=discord.ActivityType.watching, name="la web de TraduSquare", url="https://tradusquare.es")
         self.config = config
         self.last_new = News()
         self.last_new.loadlocalnew()
@@ -352,7 +352,7 @@ class Client(discord.Client):
                         name="Hecho por Hat Kid", icon_url="https://cdn.discordapp.com/avatars/363594127885074434/0778dfb946e90e6d645e09fa93d5b247.png?size=2048")
                     embed.set_thumbnail(
                         url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
-                    embed.add_field(name="**Comandos:**", value="```TS.setchannel             -  Establecerá en canal donde se ejecute como canal de noticias.\nTS.update                 -  Hará un refresco manual de las noticias de la web.\nTS.ReloadTime [minutos]   -  Establecerá el intervalo de minutos entre los refrescos automáticos.\nTS.help/info              -  Mostrará este mensaje.\nTS.SetPrefix [prefijo]    -  Establecerá el prefijo para los comandos del bot.```".replace(
+                    embed.add_field(name="**Comandos:**", value="```TS.setchannel             -  Establecerá en canal donde se ejecute como canal de noticias.\nTS.update                 -  Hará un refresco manual de las noticias de la web.\nTS.ReloadTime [minutos]   -  Establecerá el intervalo de minutos entre los refrescos automáticos.\nTS.SetPrefix [prefijo]    -  Establecerá el prefijo para los comandos del bot.\nTS.test                   -  Publica la ultima entrada. [SOLO PRUEBAS]\nTS.help o info            -  Mostrará este mensaje.```".replace(
                         "TS.", self.config.getprefix()), inline=True)
                     embed.set_footer(text="Versión: " + VERSION)
                     await channel.send(embed=embed)
@@ -385,6 +385,33 @@ class Client(discord.Client):
                             url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
                         embed.add_field(
                             name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
+                elif args[0] == "test":
+                    if (message.author.permissions_in(message.channel).administrator == True):
+                        html = requests.get(URL).text
+                        soup = BeautifulSoup(html, "html.parser")
+                        new = soup.body.find(
+                            'div', attrs={'class': 'tarjeta p-0 rounded mb-4'})
+                        print("Noticia nueva")
+                        self.last_new.Update(new)
+                        channel = self.get_channel(
+                            self.config.getchannel())
+                        embed = discord.Embed(title=self.last_new.gettitulo(
+                        ), url=self.last_new.geturl(), color=0xc565d2)
+                        embed.set_author(name=self.last_new.getautor())
+                        embed.add_field(name="**" + self.last_new.getfecha() + "**", value="```" +
+                                        self.last_new.getdescrip() + "```", inline=True)
+                        embed.set_image(url=self.last_new.getimg())
+                        embed.set_footer(text=self.last_new.getnombre())
+                        await channel.send(embed=embed)
+                    else:
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
+                        embed.set_thumbnail(
+                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                        embed.add_field(
+                            name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
+                        await channel.send(embed=embed)
                 else:
                     channel = message.channel
                     embed = discord.Embed(title=" ", color=0xc565d2)
