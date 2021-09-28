@@ -24,7 +24,8 @@ class Config:
                 "API_KEY": "YOURKEY",
                 "channel": "",
                 "PREFIX": "TS.",
-                "Reload": 5
+                "Reload": 5,
+                "RequestChannel" : ""
             }
             tmp = json.dumps(x)
             f.write(str(tmp).replace("\'", "\""))
@@ -46,8 +47,15 @@ class Config:
     def getchannel(self):
         return self.json["channel"]
 
+    def getrequestchannel(self):
+        return self.json["RequestChannel"]
+
     def setchannel(self, ch):
         self.json["channel"] = ch
+        self.UpdateConfig()
+
+    def setrequestchannel(self, ch):
+        self.json["RequestChannel"] = ch
         self.UpdateConfig()
 
     def getReload(self):
@@ -106,7 +114,7 @@ class News():
             self.descrip = new.find('div', attrs={
                                     'class': 'col p-2 pl-3 text-black rounded bg-white'}).text.replace("\n", "")
             self.tag = post_info[2].text.replace("\n", "")
-            self.img = re.search("(?P<url>https?://[^\s]+.webp)", str(
+            self.img = re.search("(?P<url>https?://[^\s]+.(?i:jpg|gif|png|bmp|webp|svg|jpeg))", str(
                 new.find('div', attrs={'class': 'col-md-5 p-0 preview'}))).group("url")
             self.url = URL + \
                 re.search(
@@ -257,12 +265,42 @@ class Client(discord.Client):
             # Imprimir mensaje por pantalla
             #print('Mensaje de {0.author}: {0.content}'.format(message))
             # mirar si están llamando al bot
+            if message.channel.id == self.config.getrequestchannel():
+                self.config.setchannel(message.channel.id)
+                channel = message.channel
+                embed = discord.Embed(title=" ", color=0xc565d2)
+                embed.set_author(name="Tokoyami Towa")
+                embed.set_thumbnail(
+                    url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                embed.add_field(
+                    name="**Mensaje:**", value="Hola, gracias por tu petición. Recuerda que aquí se traduce por gusto y puede que nos interese tu juego, o no. Un saludo.", inline=True)
+                await channel.send(embed=embed)
             if message.content.startswith(self.config.getprefix()):
                 args = str(message.content).replace(
                     self.config.getprefix(), '').split(' ')
                 if args[0] == "setchannel":
                     if (message.author.permissions_in(message.channel).administrator == True):
                         self.config.setchannel(message.channel.id)
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
+                        embed.set_thumbnail(
+                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                        embed.add_field(
+                            name="**Mensaje:**", value="El canal se ha establecido correctamente.", inline=True)
+                        await channel.send(embed=embed)
+                    else:
+                        channel = message.channel
+                        embed = discord.Embed(title=" ", color=0xc565d2)
+                        embed.set_author(name="Tokoyami Towa")
+                        embed.set_thumbnail(
+                            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+                        embed.add_field(
+                            name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
+                        await channel.send(embed=embed)
+                if args[0] == "setrequestchannel":
+                    if (message.author.permissions_in(message.channel).administrator == True):
+                        self.config.setrequestchannel(message.channel.id)
                         channel = message.channel
                         embed = discord.Embed(title=" ", color=0xc565d2)
                         embed.set_author(name="Tokoyami Towa")
