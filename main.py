@@ -120,8 +120,11 @@ class News():
                 re.search(
                     "(?P<url>entrada.php[^\s]+)", str(new.find('a'))).group("url").replace("\">", "")
             web = BeautifulSoup(requests.get(self.url).text, "html.parser")
-            self.nombre = web.find(
+            try:
+                self.nombre = web.find(
                 'div', attrs={'class': 'col text-center p-0'}).text.replace("\n", "")
+            except:
+                self.nombre = ""
             file = {
                 "nombre": self.nombre,
                 "titulo": self.titulo,
