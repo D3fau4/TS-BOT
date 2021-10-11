@@ -87,6 +87,26 @@ class Slash(Cog):
         else:
             print("No hay noticias nuevas")
 
+    @cog_ext.cog_slash(name="setchannel", description="Establece el canal donde se va a publicar las entradas")
+    async def _SetChannel(self, ctx: SlashContext):
+        if (ctx.author.permissions_in(ctx.channel).administrator == True):
+            self.config.setchannel(ctx.channel.id)
+            embed = Embed(title=" ", color=0xc565d2)
+            embed.set_author(name="Tokoyami Towa")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+            embed.add_field(
+                name="**Mensaje:**", value="El canal se ha establecido correctamente.", inline=True)
+            await ctx.send(embed=embed)
+        else:
+            embed = Embed(title=" ", color=0xc565d2)
+            embed.set_author(name="Tokoyami Towa")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+            embed.add_field(
+                name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
+            await ctx.send(embed=embed)
+
     @cog_ext.cog_slash(name="setprefix", description="[DEPRECADO] Establece el prefigo del bot.", options=[
         create_option(
             name="prefix",
