@@ -16,6 +16,7 @@ RELOAD = 5
 class Slash(Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
+        self._autoupdate.start()
         self.bot.activity = Activity(
             type=ActivityType.watching, name="la web de TraduSquare", url="https://tradusquare.es")
         self.config = Config()
@@ -61,6 +62,28 @@ class Slash(Cog):
             embed.add_field(
                 name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
             await ctx.send(embed=embed)
+
+    @tasks.loop(minutes=RELOAD)
+    async def _autoupdate(self):
+        html = requests.get(URL).text
+        soup = BeautifulSoup(html, "html.parser")
+        new = soup.body.find(
+            'div', attrs={'class': 'tarjeta p-0 rounded mb-4'})
+        if (self.last_new.titulo != new.find('h2', attrs={'class': 'mb-0'}).text.replace("\n", "")):
+            print("Noticia nueva")
+            self.last_new.Update(new)
+            channel = self.bot.get_channel(self.config.getchannel())
+            embed = Embed(title=self.last_new.gettitulo(
+            ), url=self.last_new.geturl(), color=0xc565d2)
+            embed.set_author(name=self.last_new.getautor())
+            embed.add_field(name="**" + self.last_new.getfecha() + "**", value="```" +
+                            self.last_new.getdescrip() + "```", inline=True)
+            embed.set_image(url=self.last_new.getimg())
+            embed.set_footer(text=self.last_new.getnombre())
+            await channel.send(embed=embed)
+            await channel.send("2")
+        else:
+            print("No hay noticias nuevas")
 
     @cog_ext.cog_slash(name="setprefix", description="[DEPRECADO] Establece el prefigo del bot", default_permission=True)
     async def _SetPrefix(self, ctx: SlashContext, prefix: str):
