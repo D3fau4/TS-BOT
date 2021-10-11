@@ -2,6 +2,8 @@ from discord import Embed
 from discord.activity import Activity, ActivityType
 from discord.ext.commands import Bot, Cog
 from discord_slash import cog_ext, SlashContext
+from discord_slash.utils.manage_commands import create_option
+from discord_slash.model import SlashCommandOptionType
 from TSwrapper import TSwrapper
 from Config import Config
 from discord.ext import tasks
@@ -85,16 +87,61 @@ class Slash(Cog):
         else:
             print("No hay noticias nuevas")
 
-    @cog_ext.cog_slash(name="setprefix", description="[DEPRECADO] Establece el prefigo del bot", default_permission=True)
+    @cog_ext.cog_slash(name="setprefix", description="[DEPRECADO] Establece el prefigo del bot.", options=[
+        create_option(
+            name="prefix",
+            description="Será el prefijo del bot.",
+            option_type=SlashCommandOptionType.STRING,
+            required=True
+        )
+    ], default_permission=True)
     async def _SetPrefix(self, ctx: SlashContext, prefix: str):
-        self.config.setprefix(prefix)
-        embed = Embed(title=" ", color=0xc565d2)
-        embed.set_author(name="Tokoyami Towa")
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
-        embed.add_field(
-            name="**Mensaje:**", value="Se a cambiado el prefijo correctamente por `" + self.config.getprefix() + "`", inline=True)
-        await ctx.send(embed=embed)
+        if (ctx.author.permissions_in(ctx.channel).administrator == True):
+            self.config.setprefix(prefix)
+            embed = Embed(title=" ", color=0xc565d2)
+            embed.set_author(name="Tokoyami Towa")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+            embed.add_field(
+                name="**Mensaje:**", value="Se a cambiado el prefijo correctamente por `" + self.config.getprefix() + "`", inline=True)
+            await ctx.send(embed=embed)
+        else:
+            embed = Embed(title=" ", color=0xc565d2)
+            embed.set_author(name="Tokoyami Towa")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+            embed.add_field(
+                name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
+            await ctx.send(embed=embed)
+
+    @cog_ext.cog_slash(name="setreload", description="Establece el tiempo de comprobación de la web.", options=[
+        create_option(
+            name="minutes",
+            description="Tiempo que tardará en comprobar la web (Minutos)",
+            option_type=SlashCommandOptionType.INTEGER,
+            required=True
+        )
+    ], default_permission=True)
+    async def _SetReload(self, ctx: SlashContext, minutes: str):
+        if (ctx.author.permissions_in(ctx.channel).administrator == True):
+            self.config.setReload(minutes)
+            RELOAD = self.config.getReload()
+            embed = Embed(title=" ", color=0xc565d2)
+            embed.set_author(name="Tokoyami Towa")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+            embed.add_field(
+                name="**Mensaje:**", value="Se a cambiado el tiempo de refresco de la web correctamente a {RELOAD} min.", inline=True)
+            await ctx.send(embed=embed)
+        else:
+            embed = Embed(title=" ", color=0xc565d2)
+            embed.set_author(name="Tokoyami Towa")
+            embed.set_thumbnail(
+                url="https://cdn.discordapp.com/app-icons/855802712653561876/dd525a11fda30c28c755b636ddf76986.png")
+            embed.add_field(
+                name="**Mensaje:**", value="No dispones de permisos suficientes para realizar esta acción.", inline=True)
+            await ctx.send(embed=embed)
+
 
 def setup(bot: Bot):
     bot.add_cog(Slash(bot))
